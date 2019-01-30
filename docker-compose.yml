@@ -1,0 +1,67 @@
+version: '3'
+services:
+  nginx:
+    container_name: nginx
+    image: jwilder/nginx-proxy
+    ports:
+      - "80:80"
+      # - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./nginx/certs:/etc/nginx/certs
+  mysql:
+    container_name: mysql
+    image: mysql:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/sql:/sql
+      - ./mysql/my.cnf:/etc/alternatives/my.cnf
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: password
+    restart: always
+    links:
+      - mysql:mysql
+    ports:
+      - '8080:80'
+    volumes:
+        - "./phpmyadmin/sessions:/sessions"
+# -----------------------------------------
+  sample1:
+    container_name: sample1
+    image: php:5.6-apache
+    volumes:
+      - ./php/www/sample1:/var/www/html
+      - ./php/vhosts:/etc/apache2/sites-available
+      - ./php/init.sh:/init.sh
+    links:
+      - mysql
+    entrypoint: /bin/bash /init.sh
+    environment:
+      - VIRTUAL_HOST=sample1.site.com
+      - CERT_NAME=default
+      - HTTPS_METHOD=noredirect
+# -----------------------------------------
+  sample2:
+    container_name: sample2
+    image: php:5.6-apache
+    volumes:
+      - ./php/www/sample2:/var/www/html
+      - ./php/vhosts:/etc/apache2/sites-available
+      - ./php/init.sh:/init.sh
+    links:
+      - mysql
+    entrypoint: /bin/bash /init.sh
+    environment:
+      - VIRTUAL_HOST=sample2.site.com
+      - CERT_NAME=default
+      - HTTPS_METHOD=noredirect
